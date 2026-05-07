@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctype.h>
 
 #define MAXOP 100 /* максимальный размер операнда и знака */
 #define NUMBER '0' /* сигнал, что обнаружено число */
+#define SIN '1' /* сигнал, что обнаружена функция sin */
+#define EXP '2' /* сигнал, что обнаружена функция exp */
+#define POW '3' /* сигнал, что обнаружена функция pow */
 
 int getop(char s[]);
 void push(double);
@@ -20,6 +24,15 @@ int main()
         switch (type) {
         case NUMBER:
             push(atof(s));
+            break;
+        case SIN:
+            push(sin(pop()));
+            break;
+        case EXP:
+            push(exp(pop()));
+            break;
+        case POW:
+            push(pow(pop(), pop()));
             break;
         case '+':
             push(pop() + pop());
@@ -84,7 +97,43 @@ double pop(void)
     }
 }
 
-#include <ctype.h>
+/* getnum: возвращает верхнее число из стека */
+double getnum(void)
+{
+    if (sp > 0)
+        return val[sp];
+    else {
+        printf("error: stack empty\n");
+        return 0.0;
+    }
+}
+
+/* copynum: создает в стеке дубликат последнего элемента */
+void copynum(void)
+{
+    if (sp < MAXVAL)
+        val[sp++] = val[sp];
+    else
+        printf("error: stack full, can't copy %g\n", val[sp]);
+}
+
+/* swap: меняет местами в стеке 2 последних числа */
+double swap(void)
+{
+    if (sp > 0) {
+        double tmp = val[sp];
+        val[sp] = val[sp-1];
+        val[sp-1] = tmp;
+    }
+    else {
+        printf("error: stack empty\n");
+    }
+}
+
+void clear_stack(void)
+{
+    sp = 0;
+}
 
 int getch(void);
 void ungetch(int);
@@ -98,7 +147,21 @@ int getop(char s[])
         ;
     s[1] = '\0';
     if (!isdigit(c) && c != '.')
-        return c; /* не число */
+        switch (c) {
+            case 's':
+                getch();
+                getch();
+                return SIN;
+            case 'e':
+                getch();
+                getch();
+                return EXP;
+            case 'p':
+                getch();
+                getch();
+                return POW;
+            default: return c;
+        }
     i = 0;
     if (isdigit(c)) /* накопление целой части */
         while (isdigit(s[++i] = c = getch()))
